@@ -1,0 +1,178 @@
+﻿<div class="row justify-content-center h-100">
+
+    <div class="col-md-8 col-xl-6 chat">
+        <div class="card">
+            <div class="card-header msg_head">
+                <div class="d-flex bd-highlight">
+                    <div class="img_cont">
+                        <img src="~/Assets/logo_pg.png" class="rounded-circle user_img bg-white">
+                        <span class="online_icon"></span>
+                    </div>
+                    <div class="user_info">
+                        <span>Chat Bot</span>
+                        <!--<p>1767 Messages</p>-->
+                    </div>
+                    <div class="video_cam">
+                        <!--<span><i class="fas fa-video"></i></span>-->
+                        <!--<span><i class="fas fa-phone"></i></span>-->
+                    </div>
+                </div>
+                @*<span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+                <div class="action_menu">
+                    <ul>
+                        <li><i class="fas fa-user-circle"></i> View profile</li>
+                        <li><i class="fas fa-users"></i> Add to close friends</li>
+                        <li><i class="fas fa-plus"></i> Add to group</li>
+                        <li><i class="fas fa-ban"></i> Block</li>
+                    </ul>
+                </div>*@
+            </div>
+            <div id="dialogChat" class="card-body msg_card_body">
+
+                <div class="d-flex justify-content-start mb-4">
+                    <div class="img_cont_msg">
+                        <img src="~/Assets/logo_pg.png" class="rounded-circle user_img_msg bg-white">
+                    </div>
+                    <div class="msg_cotainer">
+                        Hi, What can i do for you?
+                        <span class="msg_time">8:40 AM, Today</span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-footer">
+                <div class="input-group">
+                    <div class="input-group-append">
+                        <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+                    </div>
+                    <input id="input" name="input" class="form-control type_msg" placeholder="Type your message..." />
+                    <div class="input-group-append">
+                        <span class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.8.35/dayjs.min.js"></script>
+
+<script>
+	$(document).ready(function(){
+		$('#action_menu_btn').click(function(){
+			$('.action_menu').toggle();
+		});
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const inputField = document.getElementById("input")
+        inputField.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                if (inputField.value == '')
+                    return;
+
+                AddChatRequest(inputField.value);
+
+                GetDialogFlowData(inputField.value).then((res) => {
+                    inputField.value = "";
+                });
+                
+            }
+        });
+    });
+
+
+    async function GetDialogFlowData(text) {
+
+
+        let url = 'https://console.dialogflow.com/api-client/demo/embedded/031dd27e-2086-4941-8763-4d8d3163ad4e/demoQuery?q=' + encodeURI(text) + '&sessionId=9af71938-4757-5570-6f3c-3608790ecfe3';
+        //let url = 'https://console.dialogflow.com/api-client/demo/embedded/031dd27e-2086-4941-8763-4d8d3163ad4e/demoQuery';
+
+        //let params = {
+        //    q: encodeURI(text),
+        //    sessionId: '9af71938-4757-5570-6f3c-3608790ecfe3'
+        //};
+
+        console.log('GetDialogFlowData ', text, url);
+
+        $.ajax({
+            url: '@Url.Action("SubmitText")',
+            data: { url: url },
+            method: 'POST',
+            success: function (response) {
+                console.log(response);
+
+                if (response.startsWith('ERR')) {
+                    console.log(response);
+                    return;
+                }
+
+                if (response == '') {
+                    AddChatRespose('No response from server');
+                    return;
+                }
+
+                let result = JSON.parse(response);
+                let output = result.result.fulfillment.speech;
+
+                AddChatRespose(output);
+            },
+            error: function (response) {
+                console.log(response);
+            }
+        });
+       
+    }
+
+    function AddChatRequest(input) {
+        const mainDiv = document.getElementById("dialogChat");
+
+        let requestDiv = document.createElement("span");
+        requestDiv.innerHTML = CreateResponse('right', input);
+        mainDiv.appendChild(requestDiv);
+        ScrollDown();
+    }
+
+    function AddChatRespose(text) {
+        const mainDiv = document.getElementById("dialogChat");
+
+        let responseDiv = document.createElement("span");
+        responseDiv.innerHTML = CreateResponse('left', text);
+        mainDiv.appendChild(responseDiv);
+        ScrollDown();
+    }
+
+    function CreateResponse(style, text) {
+        let response = '';
+
+        if (style == 'left') {
+            response += '<div class="d-flex justify-content-start mb-4">';
+            response += '<div class="img_cont_msg">';
+            response += '<img src="/Assets/logo_pg.png" class="rounded-circle user_img_msg bg-white">';
+            response += '</div>';
+            response += '<div class="msg_cotainer">';
+            response += `${text}`;
+            response += '<span class="msg_time">' + dayjs().format('DD/MM/YYYY') + '</span>';
+            response += '</div>';
+            response += '</div>';
+        }
+        else {
+            response += '<div class="d-flex justify-content-end mb-4">';
+            response += '<div class="msg_cotainer_send">';
+            response += `${text}`;
+            response += '<span class="msg_time">' + dayjs().format('DD/MM/YYYY') + '</span>';
+            response += '</div>';
+            response += '<div class="img_cont_msg">';
+            response += '<img src="/Assets/user_icon.png" class="rounded-circle user_img_msg bg-white">';
+            response += '</div>';
+            response += '</div>';
+        }
+        
+        return response;
+    }
+
+    function ScrollDown() {
+        var elem = document.getElementById('dialogChat');
+        elem.scrollTop = elem.scrollHeight;
+    }
+</script>
